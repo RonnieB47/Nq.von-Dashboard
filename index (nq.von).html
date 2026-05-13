@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NQ.Von Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --red:#C41E3A;--red-dark:#8B1226;--cream:#FAF7F2;
+    --bg:#141414;--bg2:#181818;--bg3:#242424;--border:#2E2E2E;
+    --muted:#666;--mono:'DM Mono',monospace;--display:'Bebas Neue',sans-serif;
+  }
+  html,body{background:var(--bg);color:var(--cream);font-family:var(--mono);min-height:100vh}
+  body{padding:0;margin:0}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+  .logo-row{display:flex;align-items:center;gap:14px}
+  .logo-img{width:38px;height:38px;border-radius:8px;object-fit:cover}
+  .logo-text .name{font-family:var(--display);font-size:20px;letter-spacing:0.06em;line-height:1}
+  .logo-text .hosted{font-size:9px;color:var(--muted);letter-spacing:0.12em;margin-top:3px}
+  .header-right{display:flex;align-items:center;gap:8px}
+  .hbtn{background:transparent;border:0.5px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:6px;font-size:10px;font-family:var(--mono);cursor:pointer;letter-spacing:0.08em;transition:all 0.2s}
+  .hbtn:hover{border-color:var(--red);color:var(--red)}
+  .hbtn.usd{border-color:#EF9F27;color:#EF9F27}
+  .month-badge{font-size:10px;color:var(--muted);letter-spacing:0.1em;border:0.5px solid var(--border);padding:6px 12px;border-radius:6px}
+
+  /* TABS */
+  .tab-bar{display:flex;align-items:center;gap:0;padding:0 32px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+  .tab{padding:14px 20px;font-size:10px;letter-spacing:0.12em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;user-select:none}
+  .tab:hover{color:var(--cream)}
+  .tab.active{color:var(--cream);border-bottom-color:var(--red)}
+
+  /* PAGE */
+  .page{display:none;padding:24px 32px}
+  .page.active{display:block}
+
+  /* DATE + SOURCE FILTERS */
+  .filter-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+  .filter-label{font-size:9px;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
+  .date-inputs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .date-inputs input[type=date]{background:#111;border:0.5px solid #333;border-radius:6px;padding:5px 8px;color:var(--cream);font-size:10px;font-family:var(--mono);outline:none}
+  .date-inputs input[type=date]:focus{border-color:var(--red)}
+  .date-sep{font-size:10px;color:var(--muted)}
+  .fbtn{background:transparent;border:0.5px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:9px;font-family:var(--mono);cursor:pointer;letter-spacing:0.08em;transition:all 0.2s}
+  .fbtn:hover{border-color:#555;color:var(--cream)}
+  .fbtn.active{background:var(--red);border-color:var(--red);color:var(--cream)}
+  .fbtn.apply{background:var(--red);border-color:var(--red);color:var(--cream)}
+  .active-label{font-size:9px;color:var(--red);letter-spacing:0.06em}
+  .divider{width:0.5px;height:16px;background:var(--border)}
+
+  /* METRIC CARDS */
+  .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .metric-grid.three{grid-template-columns:repeat(3,1fr)}
+  .m-card{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;transition:border-color 0.2s}
+  .m-card:hover{border-color:#3a3a3a}
+  .m-card.accent{border-left:2px solid var(--red)}
+  .m-card.blue{border-left:2px solid #5B9FE4}
+  .m-label{font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px}
+  .m-val{font-family:var(--display);font-size:26px;letter-spacing:0.04em;color:var(--cream)}
+  .m-val.red{color:var(--red)}
+  .m-val.blue{color:#5B9FE4}
+  .m-sub{font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:0.06em}
+
+  /* GOAL BAR */
+  .goal-section{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px}
+  .goal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .goal-lbl{font-size:9px;color:var(--muted);letter-spacing:0.1em}
+  .goal-nums{font-size:12px;color:var(--cream)}
+  .bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--red);border-radius:3px;transition:width 1s ease}
+  .goal-meta{display:flex;justify-content:space-between;margin-top:6px}
+  .goal-pct{font-size:10px;color:var(--red)}
+  .goal-rem{font-size:10px;color:var(--muted)}
+
+  /* SPLIT */
+  .split-row{display:grid;grid-template-columns:1fr 220px;gap:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px;align-items:center}
+  .split-title{font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:14px}
+  .split-controls{display:flex;gap:14px;margin-bottom:14px}
+  .split-ctrl{display:flex;align-items:center;gap:8px}
+  .split-name{font-size:9px;letter-spacing:0.1em;min-width:46px}
+  .split-inp-wrap{display:flex;align-items:center;gap:3px}
+  .split-inp-wrap input{background:#111;border:0.5px solid #333;border-radius:5px;padding:5px 7px;color:var(--cream);font-size:11px;font-family:var(--mono);outline:none;width:50px;text-align:center}
+  .split-inp-wrap input:focus{border-color:var(--red)}
+  .split-pct-lbl{font-size:10px;color:var(--muted)}
+  .split-vals{display:flex;gap:10px}
+  .split-val{background:#1a1a1a;border:0.5px solid;border-radius:7px;padding:10px 14px;flex:1}
+  .split-val-lbl{font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-bottom:5px}
+  .split-val-num{font-family:var(--display);font-size:20px;color:var(--cream)}
+
+  /* CHARTS */
+  .chart-card{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .chart-lbl{font-size:9px;color:var(--muted);letter-spacing:0.1em}
+  .chart-hint{font-size:9px;color:#444;letter-spacing:0.06em}
+  .two-charts{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+  .leg-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted);letter-spacing:0.06em}
+  .leg-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+
+  /* DRILL DOWN */
+  .drill-panel{background:#1a1a1a;border:0.5px solid var(--red);border-radius:10px;padding:16px;margin-bottom:14px;display:none}
+  .drill-panel.open{display:block}
+  .drill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .drill-title{font-size:11px;color:var(--cream);letter-spacing:0.08em}
+  .drill-close{background:transparent;border:0.5px solid #444;color:var(--muted);padding:4px 10px;border-radius:5px;font-size:9px;cursor:pointer;font-family:var(--mono)}
+  .drill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .drill-card{background:#111;border:0.5px solid var(--border);border-radius:8px;padding:12px 14px}
+  .drill-lbl{font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-bottom:6px}
+  .drill-val{font-family:var(--display);font-size:22px;color:var(--cream)}
+
+  /* ATTRIBUTION */
+  .attr-section{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+  .attr-title{font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:14px}
+  .attr-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .attr-src{font-size:10px;color:var(--cream);min-width:80px;letter-spacing:0.06em}
+  .attr-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+  .attr-fill{height:100%;background:var(--red);border-radius:3px;transition:width 0.8s ease}
+  .attr-val{font-size:10px;color:var(--muted);min-width:55px;text-align:right}
+
+  /* MEMBERS TABLE */
+  .table-section{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:16px}
+  .table-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .table-lbl{font-size:9px;color:var(--muted);letter-spacing:0.1em}
+  .tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+  .tbl th{font-size:9px;color:#444;letter-spacing:0.08em;padding:0 0 10px;text-align:left;font-weight:400;border-bottom:0.5px solid var(--border)}
+  .tbl td{font-size:11px;color:#aaa;padding:10px 0;border-bottom:0.5px solid #1e1e1e;vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl td.name{color:var(--cream);font-weight:500}
+  .pill{display:inline-block;font-size:8px;padding:2px 7px;border-radius:4px;letter-spacing:0.08em}
+  .p-monthly{background:#0a1a2e;color:#5B9FE4;border:0.5px solid #0e2a4a}
+  .p-lifetime{background:#1a2e0d;color:#4CAF50;border:0.5px solid #1a4a1a}
+  .p-active{background:#0d2e0d;color:#4CAF50;border:0.5px solid #1a4a1a}
+  .p-cancelled{background:#1e1e1e;color:#555;border:0.5px solid #2a2a2a}
+  .empty-row td{color:#333;font-size:11px;padding:24px 0!important;text-align:center}
+
+  @media(max-width:900px){
+    .metric-grid{grid-template-columns:repeat(2,1fr)}
+    .two-charts{grid-template-columns:1fr}
+    .split-row{grid-template-columns:1fr}
+    .drill-grid{grid-template-columns:repeat(2,1fr)}
+    .page{padding:16px}
+    .header{padding:16px}
+    .tab-bar{padding:0 16px}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-row">
+    <img class="logo-img" src="nqvon-logo.png" alt="NQ.Von" onerror="this.style.display='none'" />
+    <div class="logo-text">
+      <div class="name">NQ.VON</div>
+      <div class="hosted">HOSTED BY SOLIS ACQUISITION</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="month-badge" id="month-badge">—</div>
+    <button class="hbtn" id="currency-btn" onclick="toggleCurrency()">£ GBP</button>
+    <button class="hbtn" onclick="fetchData()">↻ REFRESH</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('overview',this)">OVERVIEW</div>
+  <div class="tab" onclick="switchTab('revenue',this)">REVENUE</div>
+  <div class="tab" onclick="switchTab('members',this)">MEMBERS</div>
+</div>
+
+<!-- ===================== OVERVIEW TAB ===================== -->
+<div class="page active" id="page-overview">
+
+  <div class="filter-row">
+    <span class="filter-label">SOURCE:</span>
+    <button class="fbtn active" onclick="setSource('all',this)">ALL</button>
+    <button class="fbtn" onclick="setSource('Instagram',this)">INSTAGRAM</button>
+    <button class="fbtn" onclick="setSource('TikTok',this)">TIKTOK</button>
+    <button class="fbtn" onclick="setSource('YouTube',this)">YOUTUBE</button>
+    <button class="fbtn" onclick="setSource('Discord',this)">DISCORD</button>
+    <button class="fbtn" onclick="setSource('Other',this)">OTHER</button>
+  </div>
+
+  <div class="metric-grid">
+    <div class="m-card accent"><div class="m-label">TOTAL REVENUE</div><div class="m-val red" id="o-revenue">$0</div></div>
+    <div class="m-card"><div class="m-label">CASH COLLECTED</div><div class="m-val" id="o-cash">$0</div></div>
+    <div class="m-card"><div class="m-label">CASH AFTER FEES</div><div class="m-val" id="o-fees">$0</div></div>
+    <div class="m-card"><div class="m-label">AVG ORDER VALUE</div><div class="m-val" id="o-aov">$0</div></div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="m-card blue"><div class="m-label">MRR</div><div class="m-val blue" id="o-mrr">$0</div><div class="m-sub">MONTHLY RECURRING</div></div>
+    <div class="m-card"><div class="m-label">TOTAL MEMBERS</div><div class="m-val" id="o-total">0</div></div>
+    <div class="m-card"><div class="m-label">MONTHLY MEMBERS</div><div class="m-val" id="o-monthly">0</div></div>
+    <div class="m-card"><div class="m-label">LIFETIME MEMBERS</div><div class="m-val" id="o-lifetime">0</div></div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="m-card"><div class="m-label">CHURN</div><div class="m-val" id="o-churn">0</div></div>
+    <div class="m-card"><div class="m-label">CHURN RATE</div><div class="m-val" id="o-churnrate">0%</div></div>
+    <div class="m-card"><div class="m-label">MONTHLY %</div><div class="m-val" id="o-monthlypct">0%</div></div>
+    <div class="m-card"><div class="m-label">LIFETIME %</div><div class="m-val" id="o-lifetimepct">0%</div></div>
+  </div>
+
+  <div class="goal-section">
+    <div class="goal-top">
+      <div class="goal-lbl">MONTHLY GOAL</div>
+      <div class="goal-nums"><span id="o-gcash">$0</span> of <span id="o-gof" style="color:var(--muted)">$5,000</span></div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="o-gfill" style="width:0%"></div></div>
+    <div class="goal-meta">
+      <div class="goal-pct" id="o-gpct">0% to goal</div>
+      <div class="goal-rem" id="o-grem">$5,000 remaining</div>
+    </div>
+  </div>
+
+  <div class="split-row">
+    <div>
+      <div class="split-title">REVENUE SPLIT</div>
+      <div class="split-controls">
+        <div class="split-ctrl">
+          <span class="split-name" style="color:var(--red)">SOLIS</span>
+          <div class="split-inp-wrap">
+            <input type="number" id="split-solis" value="20" min="0" max="100" oninput="updateSplit('solis')" />
+            <span class="split-pct-lbl">%</span>
+          </div>
+        </div>
+        <div class="split-ctrl">
+          <span class="split-name" style="color:#5B9FE4">NQ.VON</span>
+          <div class="split-inp-wrap">
+            <input type="number" id="split-client" value="80" min="0" max="100" oninput="updateSplit('client')" />
+            <span class="split-pct-lbl">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="split-vals">
+        <div class="split-val" style="border-color:var(--red)"><div class="split-val-lbl">SOLIS CUT</div><div class="split-val-num" id="solis-cut">$0</div></div>
+        <div class="split-val" style="border-color:#5B9FE4"><div class="split-val-lbl">NQ.VON CUT</div><div class="split-val-num" id="client-cut">$0</div></div>
+      </div>
+    </div>
+    <div style="position:relative;height:160px;width:160px;margin:0 auto">
+      <canvas id="splitChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== REVENUE TAB ===================== -->
+<div class="page" id="page-revenue">
+
+  <div class="filter-row">
+    <span class="filter-label">DATE RANGE:</span>
+    <div class="date-inputs">
+      <input type="date" id="r-date-from" />
+      <span class="date-sep">→</span>
+      <input type="date" id="r-date-to" />
+      <button class="fbtn apply" onclick="applyDateFilter()">APPLY</button>
+      <button class="fbtn" onclick="resetDateFilter()">RESET</button>
+      <span class="active-label" id="r-date-label"></span>
+    </div>
+  </div>
+  <div class="filter-row" id="month-btns-row" style="margin-top:-10px"></div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-lbl">REVENUE — LAST 6 MONTHS</div>
+      <div class="chart-hint">CLICK A BAR TO DRILL DOWN</div>
+    </div>
+    <div style="position:relative;height:220px"><canvas id="monthChart"></canvas></div>
+  </div>
+
+  <div class="drill-panel" id="drill-panel">
+    <div class="drill-header">
+      <div class="drill-title" id="drill-title">— BREAKDOWN</div>
+      <button class="drill-close" onclick="closeDrill()">✕ CLOSE</button>
+    </div>
+    <div class="drill-grid">
+      <div class="drill-card"><div class="drill-lbl">REVENUE</div><div class="drill-val" id="d-rev">$0</div></div>
+      <div class="drill-card"><div class="drill-lbl">MEMBERS</div><div class="drill-val" id="d-members">0</div></div>
+      <div class="drill-card"><div class="drill-lbl">MONTHLY PLANS</div><div class="drill-val" id="d-monthly">0</div></div>
+      <div class="drill-card"><div class="drill-lbl">LIFETIME PLANS</div><div class="drill-val" id="d-lifetime">0</div></div>
+      <div class="drill-card"><div class="drill-lbl">AVG ORDER VALUE</div><div class="drill-val" id="d-aov">$0</div></div>
+      <div class="drill-card"><div class="drill-lbl">CHURN</div><div class="drill-val" id="d-churn">0</div></div>
+      <div class="drill-card"><div class="drill-lbl">TOP SOURCE</div><div class="drill-val" id="d-source" style="font-size:14px">—</div></div>
+      <div class="drill-card"><div class="drill-lbl">CASH AFTER FEES</div><div class="drill-val" id="d-net">$0</div></div>
+    </div>
+  </div>
+
+  <div class="two-charts">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div class="chart-lbl">REVENUE BY SOURCE</div></div>
+      <div id="r-attr-rows"><div style="font-size:10px;color:#333">No data yet.</div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-header"><div class="chart-lbl">PLAN TYPE SPLIT</div></div>
+      <div class="legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#5B9FE4"></span>MONTHLY</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#4CAF50"></span>LIFETIME</span>
+      </div>
+      <div style="position:relative;height:150px"><canvas id="planChart"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== MEMBERS TAB ===================== -->
+<div class="page" id="page-members">
+
+  <div class="filter-row">
+    <span class="filter-label">PLAN:</span>
+    <button class="fbtn active" onclick="setPlanFilter('all',this)">ALL</button>
+    <button class="fbtn" onclick="setPlanFilter('monthly',this)">MONTHLY</button>
+    <button class="fbtn" onclick="setPlanFilter('lifetime',this)">LIFETIME</button>
+    <div class="divider"></div>
+    <span class="filter-label">STATUS:</span>
+    <button class="fbtn active" id="status-all-btn" onclick="setStatusFilter('all',this)">ALL</button>
+    <button class="fbtn" onclick="setStatusFilter('active',this)">ACTIVE</button>
+    <button class="fbtn" onclick="setStatusFilter('cancelled',this)">CANCELLED</button>
+  </div>
+
+  <div class="metric-grid">
+    <div class="m-card"><div class="m-label">TOTAL MEMBERS</div><div class="m-val" id="mb-total">0</div></div>
+    <div class="m-card"><div class="m-label">ACTIVE</div><div class="m-val" id="mb-active">0</div></div>
+    <div class="m-card"><div class="m-label">CHURNED</div><div class="m-val" id="mb-churned">0</div></div>
+    <div class="m-card"><div class="m-label">CHURN RATE</div><div class="m-val" id="mb-churnrate">0%</div></div>
+  </div>
+
+  <div class="attr-section">
+    <div class="attr-title">MEMBERS BY SOURCE</div>
+    <div id="mb-attr-rows"><div style="font-size:10px;color:#333">No data yet.</div></div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-top"><div class="table-lbl">MEMBER RECORDS</div></div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:20%">NAME</th>
+          <th style="width:20%">EMAIL</th>
+          <th style="width:12%">PLAN</th>
+          <th style="width:11%">AMOUNT</th>
+          <th style="width:13%">DATE</th>
+          <th style="width:12%">SOURCE</th>
+          <th style="width:12%">STATUS</th>
+        </tr>
+      </thead>
+      <tbody id="members-body">
+        <tr class="empty-row"><td colspan="7">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const SHEET_ID='1pgXn3JOa4VH2TBk7MdZruVbeYrX0Hnyeq5PVZBeMzRg';
+const GOAL=5000;
+let allMembers=[];
+let totalCash=0,netCollected=0;
+let activeSource='all';
+let activePlan='all';
+let activeStatus='all';
+let dateFrom=null,dateTo=null;
+let currentNetRev=0;
+let currency='USD';
+let splitChart,planChart,monthChart;
+
+function fmt(n){return(currency==='GBP'?'£':'$')+Math.round(n).toLocaleString('en-US')}
+function fmtDate(s){if(!s)return'—';const d=parseDate(s);return d?d.toLocaleDateString('en-GB'):s}
+function parseDate(s){
+  if(!s)return null;
+  // Handle DD/MM/YYYY
+  if(typeof s==='string'&&s.includes('/')){
+    const[dd,mm,yyyy]=s.split('/');
+    if(dd&&mm&&yyyy){const d=new Date(yyyy,mm-1,dd);return isNaN(d)?null:d;}
+  }
+  // Handle Google Sheets Date object format e.g. "Date(2026,4,1)"
+  if(typeof s==='string'&&s.startsWith('Date(')){
+    const parts=s.replace('Date(','').replace(')','').split(',');
+    return new Date(parseInt(parts[0]),parseInt(parts[1]),parseInt(parts[2]));
+  }
+  const d=new Date(s);return isNaN(d)?null:d;
+}
+function getMonthKey(s){if(!s)return null;const d=parseDate(s);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:null}
+function getMonthLabel(k){const[y,m]=k.split('-');return new Date(y,m-1).toLocaleString('en-GB',{month:'short',year:'2-digit'}).toUpperCase()}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+  if(id==='revenue') renderRevenuePage();
+  if(id==='members') renderMembersPage();
+}
+
+function toggleCurrency(){
+  currency=currency==='USD'?'GBP':'USD';
+  const btn=document.getElementById('currency-btn');
+  btn.textContent=currency==='GBP'?'$ USD':'£ GBP';
+  btn.classList.toggle('usd',currency==='GBP');
+  renderAll();
+}
+
+async function fetchData(){
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Members`;
+    const res=await fetch(url);
+    const text=await res.text();
+    const json=JSON.parse(text.substring(47).slice(0,-2));
+    allMembers=(json.table.rows||[]).map(r=>({
+      name:r.c[0]?.v||'',email:r.c[1]?.v||'',
+      planType:(r.c[2]?.v||'').toLowerCase().trim(),
+      amount:parseFloat(r.c[3]?.v)||0,
+      paymentDate:r.c[4]?.v||'',
+      source:r.c[5]?.v||'',
+      status:(r.c[6]?.v||'active').toLowerCase().trim(),
+      whopFees:parseFloat(r.c[7]?.v)||0,
+      netCollected:parseFloat(r.c[8]?.v)||0
+    })).filter(m=>m.name&&m.name.trim().toLowerCase()!=='member name'&&m.name.trim().length>0);
+
+    const revUrl=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Revenue`;
+    const revRes=await fetch(revUrl);
+    const revText=await revRes.text();
+    const revJson=JSON.parse(revText.substring(47).slice(0,-2));
+    const revRows=revJson.table.rows||[];
+    totalCash=revRows.reduce((s,r)=>s+(parseFloat(r.c[2]?.v)||0),0);
+    netCollected=revRows.reduce((s,r)=>s+(parseFloat(r.c[5]?.v)||0),0);
+
+    const now=new Date();
+    document.getElementById('month-badge').textContent=now.toLocaleString('en-GB',{month:'long',year:'numeric'}).toUpperCase();
+    renderAll();
+  }catch(e){
+    document.getElementById('members-body').innerHTML='<tr class="empty-row"><td colspan="7" style="color:#E24B4A">Could not load data.</td></tr>';
+  }
+}
+
+function renderAll(){
+  renderOverview();
+  renderRevenuePage();
+  renderMembersPage();
+}
+
+function getFilteredMembers(){
+  let m=[...allMembers];
+  if(dateFrom&&dateTo) m=m.filter(x=>{const d=new Date(x.paymentDate);return!isNaN(d)&&d>=dateFrom&&d<=dateTo;});
+  if(activeSource!=='all') m=m.filter(x=>x.source===activeSource);
+  return m;
+}
+
+function renderOverview(){
+  const members=getFilteredMembers();
+  const active=members.filter(m=>m.status!=='cancelled');
+  const monthly=active.filter(m=>m.planType==='monthly');
+  const lifetime=active.filter(m=>m.planType==='lifetime');
+  const churned=members.filter(m=>m.status==='cancelled');
+  const totalRev=members.reduce((s,m)=>s+m.amount,0);
+  const mrr=monthly.reduce((s,m)=>s+m.amount,0);
+  const aov=members.length?Math.round(totalRev/members.length):0;
+  const churnRate=members.length?Math.round(churned.length/members.length*100):0;
+  const monthlyPct=active.length?Math.round(monthly.length/active.length*100):0;
+  const lifetimePct=active.length?Math.round(lifetime.length/active.length*100):0;
+  const gp=Math.min(Math.round(totalCash/GOAL*100),100);
+
+  document.getElementById('o-revenue').textContent=fmt(totalRev);
+  document.getElementById('o-cash').textContent=fmt(totalCash);
+  document.getElementById('o-fees').textContent=fmt(netCollected);
+  document.getElementById('o-aov').textContent=fmt(aov);
+  document.getElementById('o-mrr').textContent=fmt(mrr);
+  document.getElementById('o-total').textContent=active.length;
+  document.getElementById('o-monthly').textContent=monthly.length;
+  document.getElementById('o-lifetime').textContent=lifetime.length;
+  document.getElementById('o-churn').textContent=churned.length;
+  document.getElementById('o-churnrate').textContent=churnRate+'%';
+  document.getElementById('o-monthlypct').textContent=monthlyPct+'%';
+  document.getElementById('o-lifetimepct').textContent=lifetimePct+'%';
+  document.getElementById('o-gcash').textContent=fmt(totalCash);
+  document.getElementById('o-gof').textContent=fmt(GOAL);
+  document.getElementById('o-gfill').style.width=gp+'%';
+  document.getElementById('o-gpct').textContent=gp+'% to goal';
+  document.getElementById('o-grem').textContent=fmt(Math.max(GOAL-totalCash,0))+' remaining';
+
+  currentNetRev=totalRev;
+  renderSplit(totalRev);
+}
+
+function buildMonthButtons(months){
+  const row=document.getElementById('month-btns-row');
+  if(!row)return;
+  row.innerHTML='<span class="filter-label">QUICK:</span>'+months.map((mk,i)=>`<button class="fbtn" id="mbtn-${i}" onclick="selectMonth('${mk}',${i})">${getMonthLabel(mk)}</button>`).join('');
+}
+
+function selectMonth(mk,idx){
+  document.querySelectorAll('[id^=mbtn-]').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('mbtn-'+idx);
+  if(btn)btn.classList.add('active');
+  dateFrom=null;dateTo=null;
+  document.getElementById('r-date-from').value='';
+  document.getElementById('r-date-to').value='';
+  document.getElementById('r-date-label').textContent='';
+  openDrill(mk);
+}
+
+function renderRevenuePage(){
+  const members=getFilteredMembers();
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  buildMonthButtons(months);
+  const monthRevs=months.map(mk=>allMembers.filter(m=>getMonthKey(m.paymentDate)===mk).reduce((s,m)=>s+m.amount,0));
+
+  if(monthChart)monthChart.destroy();
+  monthChart=new Chart(document.getElementById('monthChart'),{
+    type:'bar',
+    data:{
+      labels:months.map(getMonthLabel),
+      datasets:[{label:'Revenue',data:monthRevs,backgroundColor:'#C41E3A',borderRadius:5,borderSkipped:false,hoverBackgroundColor:'#E8304A'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},
+      scales:{
+        x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1e1e1e'}},
+        y:{ticks:{color:'#555',font:{size:10},callback:v=>(currency==='GBP'?'£':'$')+v.toLocaleString()},grid:{color:'#1e1e1e'}}
+      },
+      onClick:(e,els)=>{
+        if(!els.length)return;
+        const mk=months[els[0].index];
+        openDrill(mk);
+      }
+    }
+  });
+
+  // Attribution
+  renderAttribution(members,'r-attr-rows');
+
+  // Plan chart
+  const active=members.filter(m=>m.status!=='cancelled');
+  const mc=active.filter(m=>m.planType==='monthly').length;
+  const lc=active.filter(m=>m.planType==='lifetime').length;
+  const hasData=mc>0||lc>0;
+  if(planChart)planChart.destroy();
+  planChart=new Chart(document.getElementById('planChart'),{
+    type:'doughnut',
+    data:{labels:['Monthly','Lifetime'],datasets:[{data:hasData?[mc,lc]:[1,1],backgroundColor:hasData?['#5B9FE4','#4CAF50']:['#222','#222'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}
+  });
+}
+
+function openDrill(monthKey){
+  const label=getMonthLabel(monthKey);
+  const mems=allMembers.filter(m=>getMonthKey(m.paymentDate)===monthKey);
+  const active=mems.filter(m=>m.status!=='cancelled');
+  const monthly=active.filter(m=>m.planType==='monthly');
+  const lifetime=active.filter(m=>m.planType==='lifetime');
+  const churned=mems.filter(m=>m.status==='cancelled');
+  const totalRev=mems.reduce((s,m)=>s+m.amount,0);
+  const aov=mems.length?Math.round(totalRev/mems.length):0;
+  const net=mems.reduce((s,m)=>s+m.netCollected,0);
+  const sources={};
+  mems.forEach(m=>{sources[m.source]=(sources[m.source]||0)+1;});
+  const topSrc=Object.entries(sources).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('drill-title').textContent=label+' — BREAKDOWN';
+  document.getElementById('d-rev').textContent=fmt(totalRev);
+  document.getElementById('d-members').textContent=active.length;
+  document.getElementById('d-monthly').textContent=monthly.length;
+  document.getElementById('d-lifetime').textContent=lifetime.length;
+  document.getElementById('d-aov').textContent=fmt(aov);
+  document.getElementById('d-churn').textContent=churned.length;
+  document.getElementById('d-source').textContent=topSrc?topSrc[0].toUpperCase():'—';
+  document.getElementById('d-net').textContent=fmt(net);
+  document.getElementById('drill-panel').classList.add('open');
+}
+
+function closeDrill(){document.getElementById('drill-panel').classList.remove('open');}
+
+function renderMembersPage(){
+  let members=[...allMembers];
+  if(activePlan!=='all') members=members.filter(m=>m.planType===activePlan);
+  if(activeStatus!=='all') members=members.filter(m=>m.status===activeStatus);
+
+  const active=members.filter(m=>m.status!=='cancelled');
+  const churned=members.filter(m=>m.status==='cancelled');
+  const churnRate=members.length?Math.round(churned.length/members.length*100):0;
+
+  document.getElementById('mb-total').textContent=members.length;
+  document.getElementById('mb-active').textContent=active.length;
+  document.getElementById('mb-churned').textContent=churned.length;
+  document.getElementById('mb-churnrate').textContent=churnRate+'%';
+
+  renderAttribution(members,'mb-attr-rows');
+
+  const pm={monthly:'<span class="pill p-monthly">MONTHLY</span>',lifetime:'<span class="pill p-lifetime">LIFETIME</span>'};
+  const ps={active:'<span class="pill p-active">ACTIVE</span>',cancelled:'<span class="pill p-cancelled">CANCELLED</span>'};
+  const tbody=document.getElementById('members-body');
+  if(!members.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No members found.</td></tr>';return;}
+  tbody.innerHTML=members.slice(0,100).map(m=>`
+    <tr>
+      <td class="name">${m.name}</td>
+      <td style="color:var(--muted);font-size:10px">${m.email||'—'}</td>
+      <td>${pm[m.planType]||m.planType||'—'}</td>
+      <td style="color:var(--cream)">${m.amount?fmt(m.amount):'—'}</td>
+      <td>${fmtDate(m.paymentDate)}</td>
+      <td style="color:var(--muted)">${m.source||'—'}</td>
+      <td>${ps[m.status]||m.status||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAttribution(members,containerId){
+  const sources=['Instagram','TikTok','YouTube','Discord','Other'];
+  const totalRev=members.reduce((s,m)=>s+m.amount,0);
+  const el=document.getElementById(containerId);
+  if(!totalRev){el.innerHTML='<div style="font-size:10px;color:#333">No data yet.</div>';return;}
+  el.innerHTML=sources.map(src=>{
+    const rev=members.filter(m=>m.source===src).reduce((s,m)=>s+m.amount,0);
+    if(!rev)return'';
+    const pct=Math.round(rev/totalRev*100);
+    return`<div class="attr-row"><div class="attr-src">${src.toUpperCase()}</div><div class="attr-track"><div class="attr-fill" style="width:${pct}%"></div></div><div class="attr-val">${fmt(rev)}</div></div>`;
+  }).join('');
+}
+
+function updateSplit(changed){
+  let s=parseInt(document.getElementById('split-solis').value)||0;
+  let c=parseInt(document.getElementById('split-client').value)||0;
+  if(changed==='solis'){c=100-s;document.getElementById('split-client').value=c;}
+  else{s=100-c;document.getElementById('split-solis').value=s;}
+  renderSplit(currentNetRev,s,c);
+}
+
+function renderSplit(netRev,sp,cp){
+  if(sp===undefined)sp=parseInt(document.getElementById('split-solis').value)||20;
+  if(cp===undefined)cp=parseInt(document.getElementById('split-client').value)||80;
+  document.getElementById('solis-cut').textContent=fmt(Math.round(netRev*(sp/100)));
+  document.getElementById('client-cut').textContent=fmt(Math.round(netRev*(cp/100)));
+  if(splitChart)splitChart.destroy();
+  const has=netRev>0;
+  splitChart=new Chart(document.getElementById('splitChart'),{
+    type:'doughnut',
+    data:{labels:['Solis','NQ.Von'],datasets:[{data:has?[sp,cp]:[1,4],backgroundColor:has?['#C41E3A','#5B9FE4']:['#2a2a2a','#1e1e1e'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}
+  });
+}
+
+function setSource(src,btn){
+  activeSource=src;
+  document.querySelectorAll('#page-overview .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOverview();
+}
+
+function setPlanFilter(plan,btn){
+  activePlan=plan;
+  document.querySelectorAll('#page-members .fbtn[onclick*="setPlanFilter"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMembersPage();
+}
+
+function setStatusFilter(status,btn){
+  activeStatus=status;
+  document.querySelectorAll('#page-members .fbtn[onclick*="setStatusFilter"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMembersPage();
+}
+
+function applyDateFilter(){
+  const f=document.getElementById('r-date-from').value;
+  const t=document.getElementById('r-date-to').value;
+  if(!f||!t){alert('Select both dates.');return;}
+  dateFrom=new Date(f);dateTo=new Date(t);dateTo.setHours(23,59,59,999);
+  document.getElementById('r-date-label').textContent=`ACTIVE: ${f} → ${t}`;
+  renderRevenuePage();
+}
+
+function resetDateFilter(){
+  dateFrom=null;dateTo=null;
+  document.getElementById('r-date-from').value='';
+  document.getElementById('r-date-to').value='';
+  document.getElementById('r-date-label').textContent='';
+  renderRevenuePage();
+}
+
+fetchData();
+setInterval(fetchData,60000);
+</script>
+</body>
+</html>
